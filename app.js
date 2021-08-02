@@ -5,6 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const passport = require('passport');
+const authenticate = require('./authenticate');
 
 //routes created in routes
 var indexRouter = require('./routes/index');
@@ -47,26 +49,24 @@ app.use(session({
   store: new FileStore()
 }));
 
+//these only neccessary if uing session based auth
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 
 //authenticated middleware setup
 function auth(req, res, next) {
-  console.log(req.session);
+  console.log(req.user);
 
-  if (!req.session.user) { //if client not auth and have no session
-      const err = new Error('You are not authenticated!');
-      err.status = 401;
-      return next(err);
-  } else {
-    if (req.session.user === 'authenticated') {
-      return next();
-    } else {
-      const err = new Error('You are not authenticated!');
-      err.status = 401;
-      return next(err);
-    }
+  if (!req.user) { //if no user then no session for client so not authenticated
+    const err = new Error('You are not authenticated!');
+    err.status = 401;
+    return next(err);
+  } else { // if there is a user then there is a session for client so user is passed to next middleware
+    return next();
   }
 }
 
