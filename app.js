@@ -3,7 +3,10 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
+//routes created in routes
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const campsiteRouter = require('./routes/campsiteRouter');
@@ -12,6 +15,7 @@ const promotionRouter = require('./routes/promotionRouter');
 
 const mongoose = require('mongoose');
 
+//mongoose url connect
 const url = 'mongodb://localhost:27017/nucampsite';
 const connect = mongoose.connect(url, {
   useCreateIndex: true,
@@ -33,34 +37,30 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));
+// app.use(cookieParser('12345-67890-09876-54321'));
+
+app.use(session({
+  name: 'session-id',
+  secret: '12345-67890-09876-54321',
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}));
+
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
 
 
 //authenticated middleware setup
 function auth(req, res, next) {
-  if (!req.signedCookies.user) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      const err = new Error('You are not authenticated!');
-      res.setHeader('WWW-Authenticate', 'Basic');
-      err.status = 401;
-      return next(err);
-    }
+  console.log(req.session);
 
-    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    const user = auth[0];
-    const pass = auth[1];
-    if (user === 'admin' && pass === 'password') {
-      res.cookie('user', 'admin', { signed: true });
-      return next(); // authorized
-    } else {
+  if (!req.session.user) { //if client not auth and have no session
       const err = new Error('You are not authenticated!');
-      res.setHeader('WWW-Authenticate', 'Basic');
       err.status = 401;
       return next(err);
-    }
   } else {
-    if (req.signedCookies.user === 'admin') {
+    if (req.session.user === 'authenticated') {
       return next();
     } else {
       const err = new Error('You are not authenticated!');
@@ -75,8 +75,7 @@ app.use(auth);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
+
 app.use('/campsites', campsiteRouter);
 app.use('/partners', partnerRouter);
 app.use('/promotions', promotionRouter);
