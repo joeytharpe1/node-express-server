@@ -1,24 +1,37 @@
-const express = require('express');
-const User = require('../models/user');
-const passport = require('passport');
-const authenticate = require('../authenticate');
-
+const express = require("express");
+const User = require("../models/user");
 const router = express.Router();
+const passport = require("passport");
+const authenticate = require("../authenticate");
 
 /* GET users listing. */
-router.get('/', function (req, res, next) {
-  res.send('respond with a resource');
-});
+router.get(
+  "/",
+  authenticate.verifyUser,
+  authenticate.verifyAdmin,
+  function (req, res, next) {
+    User.find()
+      .then((users) => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json");
+        res.json(users);
+      })
+      .catch((err) => {
+        return next(err);
+      });
+  }
+);
 
-router.post('/signup', (req, res) => {
+// registration authentication (sign up router)
+router.post("/signup", (req, res) => {
   User.register(
-    new User({ username: req.body.username }), // create user from client
-    req.body.password, //from client
+    new User({ username: req.body.username }),
+    req.body.password,
     (err, user) => {
       if (err) {
-        res.statusCode = 500; //server error
-        res.setHeader('Content-Type', 'application/json');
-        res.json({ err: err }); //provin info on error
+        res.statusCode = 500;
+        res.setHeader("Content-type", "application/json");
+        res.json({ err: err });
       } else {
         if (req.body.firstname) {
           user.firstname = req.body.firstname;
@@ -26,17 +39,17 @@ router.post('/signup', (req, res) => {
         if (req.body.lastname) {
           user.lastname = req.body.lastname;
         }
-        user.save(err => {
+        user.save((err) => {
           if (err) {
             res.statusCode = 500;
-            res.setHeader('Content-Type', 'application/json');
+            res.setHeader("Content-Type", "application/json");
             res.json({ err: err });
             return;
           }
-          passport.authenticate('local')(req, res, () => { //if no error authenticate new registered user
+          passport.authenticate("local")(req, res, () => {
             res.statusCode = 200;
-            res.setHeader('Content-Type', 'application/json');
-            res.json({ success: true, status: 'Registration Successful!' }); //send a status of Successful
+            res.setHeader("Content-Type", "application/json");
+            res.json({ success: true, status: "Registration Successful!" });
           });
         });
       }
@@ -44,20 +57,25 @@ router.post('/signup', (req, res) => {
   );
 });
 
-router.post('/login', passport.authenticate('local'), (req, res) => { //enable passport auth on this route, check for credentials and pasrings
+// LOGGING IN AUTHENTICATIONS!!!!
+router.post("/login", passport.authenticate("local"), (req, res) => {
   const token = authenticate.getToken({ _id: req.user._id });
   res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.json({ success: true, token: token, status: 'You are successfully logged in!' }); //sending status for success logged in
+  res.setHeader("Content-Type", "application/json");
+  res.json({
+    success: true,
+    token: token,
+    status: "you have successfully logged in!",
+  });
 });
 
-router.get('/logout', (req, res, next) => {
+router.get("/logout", (req, res, next) => {
   if (req.session) {
-    req.session.destroy(); //deleting session on server side
-    res.clearCookie('session-id'); //clear cookie stored on client
-    res.redirect('/'); //redirect user to root path localhost:3000/
-  } else { //session doesnt exist
-    const err = new Error('You are not logged in!');
+    req.session.destroy();
+    res.clearCookie("session-id");
+    res.redirect("/");
+  } else {
+    const err = new Error("You are not logged in!");
     err.status = 401;
     return next(err);
   }
