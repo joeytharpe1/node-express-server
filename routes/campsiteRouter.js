@@ -6,35 +6,35 @@ const campsiteRouter = express.Router();
 
 campsiteRouter
   .route("/")
-  .get((req, res, next) => {
-    Campsite.find()
+  .get((req, res, next) => { //READ
+    Campsite.find() //find campsite schema
       .populate("comments.author")
       .then((campsites) => {
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
-        res.json(campsites);
+        res.json(campsites); //send in json response
       })
       .catch((err) => next(err));
   })
-  .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
-    Campsite.create(req.body)
-      .then((campsite) => {
+  .post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => { //CREATE
+    Campsite.create(req.body)  //create from model schema
+      .then((campsite) => {  //lowercase is the schema object
         console.log("Campsite Created ", campsite);
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
-        res.json(campsite);
+        res.json(campsite); //send schema in json
       })
       .catch((err) => next(err));
   })
-  .put(authenticate.verifyUser, (req, res) => {
+  .put(authenticate.verifyUser, (req, res) => { //UPDATE
     res.statusCode = 403;
     res.end("PUT operation not supported on /campsites");
   })
   .delete(
     authenticate.verifyUser,
     authenticate.verifyAdmin,
-    (req, res, next) => {
-      Campsite.deleteMany()
+    (req, res, next) => { //DESTROYS
+      Campsite.deleteMany() // delete many schemas
         .then((response) => {
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
@@ -46,17 +46,17 @@ campsiteRouter
 
 campsiteRouter
   .route("/:campsiteId")
-  .get((req, res, next) => {
-    Campsite.findById(req.params.campsiteId)
+  .get((req, res, next) => { //READ
+    Campsite.findById(req.params.campsiteId) //find a campsite schema by id
       .populate("comments.author")
       .then((campsite) => {
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/json");
-        res.json(campsite);
+        res.json(campsite); //send the schema in json format
       })
-      .catch((err) => next(err));
+      .catch((err) => next(err)); //catch the error and continue processing
   })
-  .post(authenticate.verifyUser, (req, res, next) => {
+  .post(authenticate.verifyUser, (req, res, next) => { //UPDATE
     res.statusCode = 403;
     res.end(
       `POST operation not supported on /campsites/${req.params.campsiteId}`

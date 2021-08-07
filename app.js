@@ -2,7 +2,7 @@ const createError = require("http-errors");
 const express = require("express");
 const path = require("path");
 const logger = require("morgan");
-const passport = require("passport");
+const passport = require("passport"); //Passport uses what are termed strategies to authenticate requests.
 const config = require("./config");
 
 const indexRouter = require("./routes/index");
